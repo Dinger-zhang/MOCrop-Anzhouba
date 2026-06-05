@@ -10,7 +10,7 @@ import streamlit as st
 from mocrop.data_loader import load_data_bundle
 from mocrop.homestay import calculate_portfolio_projection
 from mocrop.models import HomestayProjection, Parcel, Recommendation
-from mocrop.recommender import MODES, RecommendationEngine
+from mocrop.recommender import MODES, RecommendationEngine, erosion_risk_label, land_type_label
 from mocrop.report import render_markdown_report, save_markdown_report
 
 try:
@@ -59,6 +59,39 @@ def risk_badge(risk_level: str) -> str:
         f"<span style='display:inline-block;padding:3px 10px;border-radius:999px;"
         f"background:{color}1f;color:{color};font-weight:700;'>{risk_level}风险</span>"
     )
+
+
+def score_breakdown_dataframe(recommendation: Recommendation) -> pd.DataFrame:
+    breakdown = recommendation.score_breakdown
+    rows = [
+        [
+            "生态适配",
+            breakdown["生态适配分"],
+            f"{breakdown['生态权重']:.0%}",
+            breakdown["生态加权分"],
+        ],
+        [
+            "经济收益",
+            breakdown["经济收益分"],
+            f"{breakdown['经济权重']:.0%}",
+            breakdown["经济加权分"],
+        ],
+        [
+            "农旅体验",
+            breakdown["农旅体验分"],
+            f"{breakdown['农旅权重']:.0%}",
+            breakdown["农旅加权分"],
+        ],
+        [
+            "劳动力适配",
+            breakdown["劳动力适配分"],
+            f"{breakdown['劳动力权重']:.0%}",
+            breakdown["劳动力加权分"],
+        ],
+        ["风险惩罚", breakdown["风险惩罚分"], "扣减", -breakdown["风险惩罚分"]],
+        ["总分", breakdown["总分"], "-", breakdown["总分"]],
+    ]
+    return pd.DataFrame(rows, columns=["指标", "原始分", "权重", "加权贡献"])
 
 
 def inject_style() -> None:
@@ -264,9 +297,12 @@ def render_recommendation_cards(
     parcel_recs = [item for item in recommendations if item.parcel_id == selected.parcel_id]
 
     st.caption(
-        f"{selected.name} | {selected.area_mu:.1f} 亩 | 坡度 {selected.slope_deg:.0f}° | "
-        f"水源可达 {selected.water_access:.0%} | 生态侵蚀风险 {selected.erosion_risk:.0f}/100 | "
-        f"农旅可达性 {selected.tourism_accessibility:.0f}/100"
+        f"{selected.name} | {selected.area_mu:.1f} 亩 | 坡度 {selected.slope_degree:.0f}° | "
+        f"土壤 pH {selected.soil_ph:.1f} | 有机质 {selected.organic_matter:.0f} g/kg | "
+        f"日照 {selected.sunlight_hours:.1f} 小时 | 距水源 {selected.water_distance_m:.0f} 米 | "
+        f"地块类型 {land_type_label(selected.land_type)} | "
+        f"水土流失风险 {erosion_risk_label(selected.erosion_risk)} | "
+        f"可用劳动力 {selected.labor_available} 人"
     )
 
     columns = st.columns(3)
@@ -283,11 +319,23 @@ def render_recommendation_cards(
                 st.metric("预计净收益", money(rec.expected_profit_yuan))
 
                 st.markdown(f"劳动力需求：**{rec.labor_days:.1f} 工日**")
-                st.markdown(f"生态修复评分：**{rec.ecological_score:.1f}/100**")
+                st.markdown(f"生态适配评分：**{rec.ecological_score:.1f}/100**")
                 st.progress(rec.ecological_score / 100)
+                st.markdown(f"经济收益评分：**{rec.economic_return_score:.1f}/100**")
+                st.progress(rec.economic_return_score / 100)
                 st.markdown(f"农旅体验评分：**{rec.tourism_score:.1f}/100**")
                 st.progress(rec.tourism_score / 100)
+                st.markdown(f"劳动力适配评分：**{rec.labor_adaptation_score:.1f}/100**")
+                st.progress(rec.labor_adaptation_score / 100)
                 st.markdown(f"风险等级：{risk_badge(rec.risk_level)}", unsafe_allow_html=True)
+                st.markdown(f"风险惩罚：**-{rec.risk_penalty_score:.1f} 分**")
+
+                st.markdown("**评分拆解**")
+                st.dataframe(
+                    score_breakdown_dataframe(rec),
+                    width="stretch",
+                    hide_index=True,
+                )
 
                 with st.expander("推荐理由"):
                     for reason in rec.reasons:
