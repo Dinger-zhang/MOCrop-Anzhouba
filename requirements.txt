@@ -1,8 +1,5 @@
 streamlit>=1.35
 pandas>=2.2
-numpy>=1.26
 pydantic>=2.7
 plotly>=5.22
-folium>=0.16
-streamlit-folium>=0.20
 pytest>=8.2
