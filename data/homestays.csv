@@ -1,0 +1,5 @@
+house_id,name,rooms,renovation_cost_yuan,base_occupancy_rate,avg_price_yuan,operating_cost_rate,village_share_rate,tourism_score,status
+H001,石墙小院样板间,4,180000,0.36,420,0.32,0.12,86,可改造
+H002,山景闲置农宅,6,260000,0.32,380,0.34,0.10,78,需整修
+H003,研学接待小院,8,360000,0.42,460,0.35,0.15,90,优先盘活
+H004,林下露营配套屋,3,120000,0.28,320,0.30,0.08,72,轻改造
