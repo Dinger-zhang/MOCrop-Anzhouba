@@ -4,11 +4,13 @@ import streamlit as st
 
 from mocrop.data_loader import load_data_bundle
 from mocrop.homestay import calculate_portfolio_projection
+from src.feasibility import build_feasibility_result
 from src.recommender import RecommendationEngine
 from src.ui_components import (
     inject_pitch_style,
     render_core_metrics,
     render_ecology_radar,
+    render_feasibility_section,
     render_homestay_section,
     render_income_chart,
     render_parcel_info_card,
@@ -61,6 +63,7 @@ def main() -> None:
         occupancy_delta=occupancy_delta,
         price_delta=price_delta,
     )
+    feasibility_result = build_feasibility_result(engine, homestay_projections)
 
     render_pitch_header()
     render_core_metrics(data.parcels, all_recommendations, homestay_projections, selected_mode)
@@ -94,6 +97,9 @@ def main() -> None:
     with bottom_right:
         render_timeline()
         render_report_actions(all_recommendations, homestay_projections)
+
+    st.divider()
+    render_feasibility_section(feasibility_result)
 
 
 if __name__ == "__main__":
